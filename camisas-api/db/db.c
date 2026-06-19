@@ -1,4 +1,4 @@
-cat > src/db.c << 'EOF'
+
 #include "../include/db.h"
 #include <stdlib.h>
 #include <string.h>
