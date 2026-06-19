@@ -4,7 +4,7 @@
 #include <stdio.h>
 #define DB_HOST     "127.0.0.1"
 #define DB_USER     "root"
-#define DB_PASSWORD "@DL290803"
+#define DB_PASSWORD ""
 #define DB_NAME     "camisas_db"
 #define DB_PORT     3306
 MYSQL *db_conectar(void);

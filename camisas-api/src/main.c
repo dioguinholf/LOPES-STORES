@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <signal.h>
 #include "../lib/mongoose.h"
 #include "../include/db.h"
 #include "../include/routes.h"
@@ -16,10 +15,6 @@ static void event_handler(struct mg_connection *c, int ev, void *ev_data) {
         struct mg_http_message *hm = (struct mg_http_message *)ev_data;
         MYSQL *db = ctx->db;
 
-        printf("[%s] %.*s %.*s\n", c->rem.ip,
-               (int)hm->method.len, hm->method.buf,
-               (int)hm->uri.len, hm->uri.buf);
-
         if (mg_match(hm->method, mg_str("OPTIONS"), NULL)) {
             mg_http_reply(c, 204,
                 "Access-Control-Allow-Origin: *\r\n"
@@ -27,7 +22,6 @@ static void event_handler(struct mg_connection *c, int ev, void *ev_data) {
                 "Access-Control-Allow-Headers: Content-Type\r\n", "");
             return;
         }
-
         if (mg_match(hm->uri, mg_str("/api/times"), NULL)) {
             if (mg_match(hm->method, mg_str("GET"), NULL))
                 handler_times_listar(c, hm, db);
@@ -65,17 +59,16 @@ static void event_handler(struct mg_connection *c, int ev, void *ev_data) {
                 handler_pedido_obter(c, hm, db, atoi(id_str));
             return;
         }
-
         mg_http_reply(c, 404,
             "Content-Type: application/json\r\n"
             "Access-Control-Allow-Origin: *\r\n",
-            "{\"erro\":\"Rota não encontrada\"}");
+            "{\"erro\":\"Rota nao encontrada\"}");
     }
 }
 
 int main(void) {
     printf("╔══════════════════════════════════════╗\n");
-    printf("║   Camisas de Time API  — v1.0        ║\n");
+    printf("║   Camisas de Time API  - v1.0        ║\n");
     printf("╚══════════════════════════════════════╝\n\n");
 
     MYSQL *db = db_conectar();

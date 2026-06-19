@@ -1,11 +1,37 @@
 #ifndef ROUTES_H
 #define ROUTES_H
-#include "../lib/mongoose.h"
-#include <mysql/mysql.h>
-void handler_camisas_listar(struct mg_connection *c, struct mg_http_message *hm, MYSQL *db);
-void handler_camisa_obter(struct mg_connection *c, struct mg_http_message *hm, MYSQL *db, int id);
-void handler_camisa_criar(struct mg_connection *c, struct mg_http_message *hm, MYSQL *db);
-void handler_times_listar(struct mg_connection *c, struct mg_http_message *hm, MYSQL *db);
-void handler_pedido_criar(struct mg_connection *c, struct mg_http_message *hm, MYSQL *db);
-void handler_pedido_obter(struct mg_connection *c, struct mg_http_message *hm, MYSQL *db, int id);
-#endif
+#include
+cat > src/db.c << 'EOF'
+#include "../include/db.h"
+#include <stdlib.h>
+#include <string.h>
+
+MYSQL *db_conectar(void) {
+    MYSQL *conn = mysql_init(NULL);
+    if (!conn) { fprintf(stderr, "[DB] Falha ao inicializar\n"); return NULL; }
+    if (!mysql_real_connect(conn, DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, DB_PORT, NULL, 0)) {
+        fprintf(stderr, "[DB] Erro: %s\n", mysql_error(conn));
+        mysql_close(conn); return NULL;
+    }
+    mysql_set_character_set(conn, "utf8mb4");
+    printf("[DB] Conectado ao banco '%s'\n", DB_NAME);
+    return conn;
+}
+
+void db_desconectar(MYSQL *conn) {
+    if (conn) { mysql_close(conn); printf("[DB] Conexão encerrada\n"); }
+}
+
+MYSQL_RES *db_query(MYSQL *conn, const char *query) {
+    if (mysql_query(conn, query)) {
+        fprintf(stderr, "[DB] Erro: %s\n", mysql_error(conn)); return NULL;
+    }
+    return mysql_store_result(conn);
+}
+
+int db_exec(MYSQL *conn, const char *query) {
+    if (mysql_query(conn, query)) {
+        fprintf(stderr, "[DB] Erro: %s\n", mysql_error(conn)); return -1;
+    }
+    return 0;
+}
