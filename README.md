@@ -1,6 +1,6 @@
 # 🏟️ Camisas de Time API
 
-> Back-end REST para loja de camisas de time, escrito em **C** com servidor HTTP embarcado [Mongoose](https://mongoose.ws/) e banco de dados **MySQL/MariaDB**.
+API REST desenvolvida em C com Mongoose e MySQL para gerenciamento de times, camisas, pedidos e itens de pedido.
 
 -----
 
