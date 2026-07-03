@@ -10,11 +10,14 @@ const IMAGENS = {
 
 const IMG_FALLBACK = 'https://images.unsplash.com/photo-1618886614638-80e3c103d31a?w=400&q=80';
 
+const TAMANHOS = ['PP', 'P', 'M', 'G', 'GG', 'XGG'];
+
 function Home({ adicionarCarrinho }) {
   const [camisas, setCamisas] = useState([]);
   const [times, setTimes] = useState([]);
   const [timeSelecionado, setTimeSelecionado] = useState('');
   const [adicionados, setAdicionados] = useState({});
+  const [tamanhoSelecionado, setTamanhoSelecionado] = useState({});
 
   useEffect(() => {
     api.get('/api/times').then(r => setTimes(r.data));
@@ -27,8 +30,13 @@ function Home({ adicionarCarrinho }) {
     api.get(url).then(r => setCamisas(r.data));
   };
 
+  const selecionarTamanho = (camisaId, tamanho) => {
+    setTamanhoSelecionado(prev => ({ ...prev, [camisaId]: tamanho }));
+  };
+
   const handleAdicionar = (camisa) => {
-    adicionarCarrinho(camisa);
+    const tamanho = tamanhoSelecionado[camisa.id] || 'M';
+    adicionarCarrinho({ ...camisa, tamanho });
     setAdicionados(prev => ({ ...prev, [camisa.id]: true }));
     setTimeout(() => setAdicionados(prev => ({ ...prev, [camisa.id]: false })), 1500);
   };
@@ -74,6 +82,18 @@ function Home({ adicionarCarrinho }) {
                   <p className="preco">R$ {parseFloat(c.preco).toFixed(2)}</p>
                   <p className="estoque">Estoque: {c.estoque} un.</p>
                 </div>
+              </div>
+              <div className="tamanhos-card">
+                {TAMANHOS.map(t => (
+                  <button
+                    key={t}
+                    type="button"
+                    className={(tamanhoSelecionado[c.id] || 'M') === t ? 'tamanho-btn ativo' : 'tamanho-btn'}
+                    onClick={() => selecionarTamanho(c.id, t)}
+                  >
+                    {t}
+                  </button>
+                ))}
               </div>
               <button
                 onClick={() => handleAdicionar(c)}

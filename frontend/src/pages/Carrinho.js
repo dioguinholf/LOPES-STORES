@@ -4,19 +4,16 @@ import api from '../services/api';
 function Carrinho({ carrinho, removerCarrinho, limparCarrinho }) {
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
-  const [tamanhos, setTamanhos] = useState({});
   const [pedidoFeito, setPedidoFeito] = useState(null);
 
   const total = carrinho.reduce((acc, c) => acc + parseFloat(c.preco), 0);
-
-  const setTamanho = (id, tamanho) => setTamanhos({ ...tamanhos, [id]: tamanho });
 
   const finalizar = async () => {
     if (!nome || !email) { alert('Preencha nome e email!'); return; }
     const itens = carrinho.map(c => ({
       camisa_id: c.id,
       quantidade: 1,
-      tamanho: tamanhos[c.id] || 'M'
+      tamanho: c.tamanho || 'M'
     }));
     try {
       const r = await api.post('/api/pedidos', { cliente_nome: nome, cliente_email: email, itens });
@@ -51,9 +48,7 @@ function Carrinho({ carrinho, removerCarrinho, limparCarrinho }) {
                 <p>{c.time} — R$ {parseFloat(c.preco).toFixed(2)}</p>
               </div>
               <div className="item-acoes">
-                <select onChange={e => setTamanho(c.id, e.target.value)} defaultValue="M">
-                  {['PP','P','M','G','GG','XGG'].map(t => <option key={t}>{t}</option>)}
-                </select>
+                <span className="tamanho-badge">{c.tamanho || 'M'}</span>
                 <button onClick={() => removerCarrinho(i)}>✕</button>
               </div>
             </div>

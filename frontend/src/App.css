@@ -254,6 +254,46 @@ nav::after {
 
 .card .estoque { font-size: 0.75rem; color: var(--muted); margin-top: 0.2rem; }
 
+.tamanhos-card {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.9rem;
+  flex-wrap: wrap;
+}
+
+.tamanhos-card .tamanho-btn {
+  flex: 1;
+  min-width: 36px;
+  width: auto;
+  padding: 0.4rem 0;
+  margin-top: 0;
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  transition: all 0.2s;
+}
+
+.tamanhos-card .tamanho-btn:hover {
+  border-color: rgba(214,52,71,0.5);
+  color: var(--text);
+  background: transparent;
+  box-shadow: none;
+}
+
+.tamanhos-card .tamanho-btn.ativo {
+  background: var(--neon);
+  border-color: var(--neon);
+  color: #fff;
+  box-shadow: 0 0 12px rgba(214,52,71,0.4);
+}
+
 .card button {
   width: 100%;
   padding: 0.8rem;
@@ -303,13 +343,15 @@ nav::after {
 
 .item-acoes { display: flex; gap: 0.75rem; align-items: center; }
 
-.item-acoes select {
-  padding: 0.4rem 0.75rem;
+.tamanho-badge {
+  padding: 0.4rem 0.9rem;
   background: var(--bg3);
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: 6px;
-  font-family: 'Rajdhani', sans-serif;
+  font-family: 'Orbitron', monospace;
+  font-size: 0.8rem;
+  font-weight: 700;
 }
 
 .item-acoes button {
