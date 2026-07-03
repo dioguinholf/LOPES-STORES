@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import Home from './pages/Home';
 import Carrinho from './pages/Carrinho';
+import FundoCampo from './components/FundoCampo';
 import './App.css';
 
 function NavBar({ carrinho }) {
@@ -31,6 +32,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      <FundoCampo />
       <NavBar carrinho={carrinho} />
       <Routes>
         <Route path="/" element={<Home adicionarCarrinho={adicionarCarrinho} />} />

@@ -28,9 +28,9 @@ export default function FundoCampo() {
 
       // Fundo gradiente
       const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-      grad.addColorStop(0, '#020408');
-      grad.addColorStop(0.5, '#030810');
-      grad.addColorStop(1, '#020408');
+      grad.addColorStop(0, '#0a1128');
+      grad.addColorStop(0.5, '#101b3d');
+      grad.addColorStop(1, '#0a1128');
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -55,7 +55,7 @@ export default function FundoCampo() {
       const mg = W * 0.06;
       const mgV = H * 0.08;
       ctx.lineWidth = 1.5;
-      neon(`rgba(0, 245, 255, ${pulse})`, 20);
+      neon(`rgba(214, 52, 71, ${pulse})`, 20);
       ctx.beginPath();
       ctx.strokeRect(mg, mgV, W - mg * 2, H - mgV * 2);
 
@@ -63,21 +63,21 @@ export default function FundoCampo() {
       ctx.beginPath();
       ctx.moveTo(W / 2, mgV);
       ctx.lineTo(W / 2, H - mgV);
-      neon(`rgba(0, 245, 255, ${pulse})`, 15);
+      neon(`rgba(214, 52, 71, ${pulse})`, 15);
       ctx.stroke();
 
       // Círculo central
       const r = Math.min(W, H) * 0.12;
       ctx.beginPath();
       ctx.arc(W / 2, H / 2, r, 0, Math.PI * 2);
-      neon(`rgba(0, 245, 255, ${pulse})`, 20);
+      neon(`rgba(214, 52, 71, ${pulse})`, 20);
       ctx.stroke();
 
       // Ponto central
       ctx.beginPath();
       ctx.arc(W / 2, H / 2, 4, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(0, 245, 255, ${pulse})`;
-      ctx.shadowColor = '#00f5ff';
+      ctx.fillStyle = `rgba(214, 52, 71, ${pulse})`;
+      ctx.shadowColor = '#d63447';
       ctx.shadowBlur = 15;
       ctx.fill();
 
@@ -87,7 +87,7 @@ export default function FundoCampo() {
       const ay = (H - ah) / 2;
       ctx.beginPath();
       ctx.strokeRect(mg, ay, aw, ah);
-      neon(`rgba(123, 47, 255, ${pulse2})`, 15);
+      neon(`rgba(59, 91, 169, ${pulse2})`, 15);
       ctx.stroke();
 
       // Pequena área esquerda
@@ -96,31 +96,31 @@ export default function FundoCampo() {
       const say = (H - sah) / 2;
       ctx.beginPath();
       ctx.strokeRect(mg, say, saw, sah);
-      neon(`rgba(123, 47, 255, ${pulse2 * 0.8})`, 10);
+      neon(`rgba(59, 91, 169, ${pulse2 * 0.8})`, 10);
       ctx.stroke();
 
       // Área direita
       ctx.beginPath();
       ctx.strokeRect(W - mg - aw, ay, aw, ah);
-      neon(`rgba(123, 47, 255, ${pulse2})`, 15);
+      neon(`rgba(59, 91, 169, ${pulse2})`, 15);
       ctx.stroke();
 
       // Pequena área direita
       ctx.beginPath();
       ctx.strokeRect(W - mg - saw, say, saw, sah);
-      neon(`rgba(123, 47, 255, ${pulse2 * 0.8})`, 10);
+      neon(`rgba(59, 91, 169, ${pulse2 * 0.8})`, 10);
       ctx.stroke();
 
       // Semicírculo área esquerda
       ctx.beginPath();
       ctx.arc(mg + aw, H / 2, r * 0.7, -Math.PI * 0.4, Math.PI * 0.4);
-      neon(`rgba(0, 245, 255, ${pulse * 0.7})`, 12);
+      neon(`rgba(214, 52, 71, ${pulse * 0.7})`, 12);
       ctx.stroke();
 
       // Semicírculo área direita
       ctx.beginPath();
       ctx.arc(W - mg - aw, H / 2, r * 0.7, Math.PI * 0.6, Math.PI * 1.4);
-      neon(`rgba(0, 245, 255, ${pulse * 0.7})`, 12);
+      neon(`rgba(214, 52, 71, ${pulse * 0.7})`, 12);
       ctx.stroke();
 
       // Cantos do campo (arcos)
@@ -128,7 +128,7 @@ export default function FundoCampo() {
       // canto sup esq
       ctx.beginPath();
       ctx.arc(mg, mgV, cr, 0, Math.PI / 2);
-      neon(`rgba(255, 0, 110, ${pulse2 * 0.8})`, 10);
+      neon(`rgba(242, 169, 59, ${pulse2 * 0.8})`, 10);
       ctx.stroke();
       // canto sup dir
       ctx.beginPath();
@@ -147,8 +147,8 @@ export default function FundoCampo() {
       const pp = W * 0.09;
       ctx.beginPath();
       ctx.arc(mg + pp, H / 2, 3, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(255, 0, 110, ${pulse2})`;
-      ctx.shadowColor = '#ff006e';
+      ctx.fillStyle = `rgba(242, 169, 59, ${pulse2})`;
+      ctx.shadowColor = '#f2a93b';
       ctx.shadowBlur = 12;
       ctx.fill();
 
@@ -158,9 +158,9 @@ export default function FundoCampo() {
 
       // Overlay escuro para não competir com o conteúdo
       const overlay = ctx.createLinearGradient(0, 0, 0, H);
-      overlay.addColorStop(0, 'rgba(2,4,8,0.55)');
-      overlay.addColorStop(0.5, 'rgba(2,4,8,0.45)');
-      overlay.addColorStop(1, 'rgba(2,4,8,0.55)');
+      overlay.addColorStop(0, 'rgba(10,17,40,0.55)');
+      overlay.addColorStop(0.5, 'rgba(10,17,40,0.45)');
+      overlay.addColorStop(1, 'rgba(10,17,40,0.55)');
       ctx.fillStyle = overlay;
       ctx.shadowBlur = 0;
       ctx.fillRect(0, 0, W, H);
