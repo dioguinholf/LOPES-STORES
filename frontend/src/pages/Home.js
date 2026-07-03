@@ -1,13 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 
-const IMAGENS = {
-  'Flamengo':        'https://images.unsplash.com/photo-1517466787929-bc90951d0974?w=400&q=80',
-  'Corinthians':     'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=400&q=80',
-  'Real Madrid':     'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=400&q=80',
-  'Manchester City': 'https://images.unsplash.com/photo-1553778263-73a83bab9b0c?w=400&q=80',
-};
-
 const IMG_FALLBACK = 'https://images.unsplash.com/photo-1618886614638-80e3c103d31a?w=400&q=80';
 
 const TAMANHOS = ['PP', 'P', 'M', 'G', 'GG', 'XGG'];
@@ -68,7 +61,7 @@ function Home({ adicionarCarrinho }) {
           <div key={c.id} className="card">
             <img
               className="card-img"
-              src={IMAGENS[c.time] || IMG_FALLBACK}
+              src={c.imagem_url || IMG_FALLBACK}
               alt={c.nome}
               onError={e => { e.target.src = IMG_FALLBACK; }}
             />
