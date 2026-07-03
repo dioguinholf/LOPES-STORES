@@ -37,6 +37,17 @@ static int json_get_string(const char *json, const char *key, char *out, size_t 
     return 1;
 }
 
+/* Escapa uma string para uso seguro dentro de uma query SQL.
+ * out_size deve ser pelo menos (2 * strlen(in)) + 1.
+ * Trunca a entrada se necessario para caber no buffer de saida. */
+static void db_escape(MYSQL *db, char *out, size_t out_size, const char *in) {
+    if (out_size == 0) return;
+    size_t in_len = strlen(in);
+    size_t max_len = (out_size - 1) / 2;
+    if (in_len > max_len) in_len = max_len;
+    mysql_real_escape_string(db, out, in, in_len);
+}
+
 void handler_times_listar(struct mg_connection *c, struct mg_http_message *hm, MYSQL *db) {
     (void)hm;
     MYSQL_RES *res = db_query(db, "SELECT id, nome, pais FROM times ORDER BY nome");
@@ -57,14 +68,15 @@ void handler_times_listar(struct mg_connection *c, struct mg_http_message *hm, M
 }
 
 void handler_camisas_listar(struct mg_connection *c, struct mg_http_message *hm, MYSQL *db) {
-    char time_id[16] = "";
-    mg_http_get_var(&hm->query, "time_id", time_id, sizeof(time_id));
+    char time_id_str[16] = "";
+    mg_http_get_var(&hm->query, "time_id", time_id_str, sizeof(time_id_str));
     char query[512];
-    if (strlen(time_id) > 0) {
+    if (strlen(time_id_str) > 0) {
+        int time_id = atoi(time_id_str);
         snprintf(query, sizeof(query),
             "SELECT c.id, c.nome, c.preco, c.temporada, c.tipo, c.estoque, "
             "c.imagem_url, t.nome FROM camisas c JOIN times t ON c.time_id = t.id "
-            "WHERE c.time_id = %s ORDER BY c.id", time_id);
+            "WHERE c.time_id = %d ORDER BY c.id", time_id);
     } else {
         snprintf(query, sizeof(query),
             "SELECT c.id, c.nome, c.preco, c.temporada, c.tipo, c.estoque, "
@@ -128,11 +140,21 @@ void handler_camisa_criar(struct mg_connection *c, struct mg_http_message *hm, M
     if (!json_get_string(body, "temporada", temporada, sizeof(temporada))) strcpy(temporada, "");
     if (!json_get_string(body, "tipo", tipo, sizeof(tipo))) strcpy(tipo, "casa");
     if (!json_get_string(body, "estoque", estoque, sizeof(estoque))) strcpy(estoque, "0");
+
+    int time_id_i = atoi(time_id);
+    double preco_d = atof(preco);
+    int estoque_i = atoi(estoque);
+
+    char nome_esc[301], temporada_esc[41], tipo_esc[41];
+    db_escape(db, nome_esc, sizeof(nome_esc), nome);
+    db_escape(db, temporada_esc, sizeof(temporada_esc), temporada);
+    db_escape(db, tipo_esc, sizeof(tipo_esc), tipo);
+
     char query[512];
     snprintf(query, sizeof(query),
         "INSERT INTO camisas (time_id, nome, preco, temporada, tipo, estoque) "
-        "VALUES (%s, '%s', %s, '%s', '%s', %s)",
-        time_id, nome, preco, temporada, tipo, estoque);
+        "VALUES (%d, '%s', %.2f, '%s', '%s', %d)",
+        time_id_i, nome_esc, preco_d, temporada_esc, tipo_esc, estoque_i);
     if (db_exec(db, query) != 0) { send_error(c, 500, "Erro ao inserir"); return; }
     unsigned long long new_id = mysql_insert_id(db);
     char resp[64];
@@ -149,11 +171,15 @@ void handler_pedido_criar(struct mg_connection *c, struct mg_http_message *hm, M
         !json_get_string(body, "cliente_email", cliente_email, sizeof(cliente_email))) {
         send_error(c, 400, "Campos obrigatorios: cliente_nome, cliente_email"); return;
     }
+    char cliente_nome_esc[301], cliente_email_esc[301];
+    db_escape(db, cliente_nome_esc, sizeof(cliente_nome_esc), cliente_nome);
+    db_escape(db, cliente_email_esc, sizeof(cliente_email_esc), cliente_email);
+
     db_exec(db, "START TRANSACTION");
-    char q[512];
+    char q[700];
     snprintf(q, sizeof(q),
         "INSERT INTO pedidos (cliente_nome, cliente_email, total) VALUES ('%s', '%s', 0.00)",
-        cliente_nome, cliente_email);
+        cliente_nome_esc, cliente_email_esc);
     if (db_exec(db, q) != 0) { db_exec(db, "ROLLBACK"); send_error(c, 500, "Erro ao criar pedido"); return; }
     unsigned long long pedido_id = mysql_insert_id(db);
     double total = 0.0;
@@ -169,23 +195,29 @@ void handler_pedido_criar(struct mg_connection *c, struct mg_http_message *hm, M
             size_t il = oe - os + 1;
             if (il >= sizeof(item)) { p = oe+1; continue; }
             memcpy(item, os, il); item[il] = '\0';
-            char camisa_id[16], qtd[8], tamanho[8];
-            if (!json_get_string(item, "camisa_id", camisa_id, sizeof(camisa_id)) ||
-                !json_get_string(item, "quantidade", qtd, sizeof(qtd)) ||
+            char camisa_id_str[16], qtd_str[8], tamanho[8];
+            if (!json_get_string(item, "camisa_id", camisa_id_str, sizeof(camisa_id_str)) ||
+                !json_get_string(item, "quantidade", qtd_str, sizeof(qtd_str)) ||
                 !json_get_string(item, "tamanho", tamanho, sizeof(tamanho))) { p = oe+1; continue; }
+
+            int camisa_id = atoi(camisa_id_str);
+            int qtd = atoi(qtd_str);
+            char tamanho_esc[17];
+            db_escape(db, tamanho_esc, sizeof(tamanho_esc), tamanho);
+
             char qp[128];
-            snprintf(qp, sizeof(qp), "SELECT preco FROM camisas WHERE id = %s", camisa_id);
+            snprintf(qp, sizeof(qp), "SELECT preco FROM camisas WHERE id = %d", camisa_id);
             MYSQL_RES *res = db_query(db, qp);
             if (!res) { p = oe+1; continue; }
             MYSQL_ROW row = mysql_fetch_row(res);
             double preco_unit = row ? atof(row[0]) : 0;
             mysql_free_result(res);
-            total += preco_unit * atoi(qtd);
+            total += preco_unit * qtd;
             snprintf(q, sizeof(q),
                 "INSERT INTO pedido_itens (pedido_id, camisa_id, quantidade, tamanho, preco_unit) "
-                "VALUES (%llu, %s, %s, '%s', %.2f)", pedido_id, camisa_id, qtd, tamanho, preco_unit);
+                "VALUES (%llu, %d, %d, '%s', %.2f)", pedido_id, camisa_id, qtd, tamanho_esc, preco_unit);
             db_exec(db, q);
-            snprintf(q, sizeof(q), "UPDATE camisas SET estoque = estoque - %s WHERE id = %s", qtd, camisa_id);
+            snprintf(q, sizeof(q), "UPDATE camisas SET estoque = estoque - %d WHERE id = %d", qtd, camisa_id);
             db_exec(db, q);
             p = oe+1;
         }
