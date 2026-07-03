@@ -19,7 +19,7 @@ static void event_handler(struct mg_connection *c, int ev, void *ev_data) {
             mg_http_reply(c, 204,
                 "Access-Control-Allow-Origin: *\r\n"
                 "Access-Control-Allow-Methods: GET, POST, OPTIONS\r\n"
-                "Access-Control-Allow-Headers: Content-Type\r\n", "");
+                "Access-Control-Allow-Headers: Content-Type, Authorization\r\n", "");
             return;
         }
         if (mg_match(hm->uri, mg_str("/api/times"), NULL)) {
@@ -57,6 +57,21 @@ static void event_handler(struct mg_connection *c, int ev, void *ev_data) {
             memcpy(id_str, p, id_len); id_str[id_len] = '\0';
             if (mg_match(hm->method, mg_str("GET"), NULL))
                 handler_pedido_obter(c, hm, db, atoi(id_str));
+            return;
+        }
+        if (mg_match(hm->uri, mg_str("/api/clientes/cadastro"), NULL)) {
+            if (mg_match(hm->method, mg_str("POST"), NULL))
+                handler_cliente_cadastrar(c, hm, db);
+            return;
+        }
+        if (mg_match(hm->uri, mg_str("/api/clientes/login"), NULL)) {
+            if (mg_match(hm->method, mg_str("POST"), NULL))
+                handler_cliente_login(c, hm, db);
+            return;
+        }
+        if (mg_match(hm->uri, mg_str("/api/clientes/pedidos"), NULL)) {
+            if (mg_match(hm->method, mg_str("GET"), NULL))
+                handler_cliente_pedidos(c, hm, db);
             return;
         }
         mg_http_reply(c, 404,

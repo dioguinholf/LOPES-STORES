@@ -12,5 +12,8 @@ void handler_camisa_obter(struct mg_connection *c, struct mg_http_message *hm, M
 void handler_camisa_criar(struct mg_connection *c, struct mg_http_message *hm, MYSQL *db);
 void handler_pedido_criar(struct mg_connection *c, struct mg_http_message *hm, MYSQL *db);
 void handler_pedido_obter(struct mg_connection *c, struct mg_http_message *hm, MYSQL *db, int id);
+void handler_cliente_cadastrar(struct mg_connection *c, struct mg_http_message *hm, MYSQL *db);
+void handler_cliente_login(struct mg_connection *c, struct mg_http_message *hm, MYSQL *db);
+void handler_cliente_pedidos(struct mg_connection *c, struct mg_http_message *hm, MYSQL *db);
 
 #endif

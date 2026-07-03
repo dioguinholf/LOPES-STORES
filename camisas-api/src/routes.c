@@ -3,6 +3,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <openssl/sha.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 static void send_json(struct mg_connection *c, int status, const char *body) {
     mg_http_reply(c, status,
@@ -46,6 +49,62 @@ static void db_escape(MYSQL *db, char *out, size_t out_size, const char *in) {
     size_t max_len = (out_size - 1) / 2;
     if (in_len > max_len) in_len = max_len;
     mysql_real_escape_string(db, out, in, in_len);
+}
+
+/* Gera nbytes de dados criptograficamente aleatorios (via /dev/urandom) e
+ * escreve como string hexadecimal em out (out deve ter espaco para nbytes*2+1). */
+static void gen_random_hex(char *out, int nbytes) {
+    unsigned char buf[64];
+    if (nbytes > (int)sizeof(buf)) nbytes = (int)sizeof(buf);
+    int fd = open("/dev/urandom", O_RDONLY);
+    if (fd >= 0) {
+        ssize_t r = read(fd, buf, nbytes);
+        close(fd);
+        if (r != nbytes) { for (int i = 0; i < nbytes; i++) buf[i] = (unsigned char)rand(); }
+    } else {
+        for (int i = 0; i < nbytes; i++) buf[i] = (unsigned char)rand();
+    }
+    for (int i = 0; i < nbytes; i++) sprintf(out + i * 2, "%02x", buf[i]);
+    out[nbytes * 2] = '\0';
+}
+
+/* Calcula SHA-256(salt + senha) em hexadecimal (64 caracteres + '\0').
+ * O salt garante que duas senhas iguais gerem hashes diferentes no banco. */
+static void calc_senha_hash(const char *senha, const char *salt, char *out_hex) {
+    char combined[300];
+    snprintf(combined, sizeof(combined), "%s%s", salt, senha);
+    unsigned char digest[SHA256_DIGEST_LENGTH];
+    SHA256((unsigned char *)combined, strlen(combined), digest);
+    for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) sprintf(out_hex + i * 2, "%02x", digest[i]);
+    out_hex[SHA256_DIGEST_LENGTH * 2] = '\0';
+}
+
+/* Le o header Authorization ("Bearer <token>") e retorna o cliente_id
+ * correspondente a uma sessao valida e nao expirada, ou 0 se invalido/ausente. */
+static int resolver_cliente_por_token(struct mg_http_message *hm, MYSQL *db) {
+    struct mg_str *auth = mg_http_get_header(hm, "Authorization");
+    if (!auth || auth->len == 0) return 0;
+
+    char token[80];
+    size_t tl = auth->len < sizeof(token) - 1 ? auth->len : sizeof(token) - 1;
+    memcpy(token, auth->buf, tl);
+    token[tl] = '\0';
+
+    char *t = token;
+    if (strncmp(t, "Bearer ", 7) == 0) t += 7;
+
+    char token_esc[170];
+    db_escape(db, token_esc, sizeof(token_esc), t);
+
+    char q[300];
+    snprintf(q, sizeof(q),
+        "SELECT cliente_id FROM sessoes WHERE token = '%s' AND expira_em > NOW()", token_esc);
+    MYSQL_RES *res = db_query(db, q);
+    if (!res) return 0;
+    MYSQL_ROW row = mysql_fetch_row(res);
+    int cliente_id = row ? atoi(row[0]) : 0;
+    mysql_free_result(res);
+    return cliente_id;
 }
 
 void handler_times_listar(struct mg_connection *c, struct mg_http_message *hm, MYSQL *db) {
@@ -175,11 +234,19 @@ void handler_pedido_criar(struct mg_connection *c, struct mg_http_message *hm, M
     db_escape(db, cliente_nome_esc, sizeof(cliente_nome_esc), cliente_nome);
     db_escape(db, cliente_email_esc, sizeof(cliente_email_esc), cliente_email);
 
+    int cliente_id = resolver_cliente_por_token(hm, db);
+
     db_exec(db, "START TRANSACTION");
-    char q[700];
-    snprintf(q, sizeof(q),
-        "INSERT INTO pedidos (cliente_nome, cliente_email, total) VALUES ('%s', '%s', 0.00)",
-        cliente_nome_esc, cliente_email_esc);
+    char q[760];
+    if (cliente_id > 0) {
+        snprintf(q, sizeof(q),
+            "INSERT INTO pedidos (cliente_id, cliente_nome, cliente_email, total) VALUES (%d, '%s', '%s', 0.00)",
+            cliente_id, cliente_nome_esc, cliente_email_esc);
+    } else {
+        snprintf(q, sizeof(q),
+            "INSERT INTO pedidos (cliente_nome, cliente_email, total) VALUES ('%s', '%s', 0.00)",
+            cliente_nome_esc, cliente_email_esc);
+    }
     if (db_exec(db, q) != 0) { db_exec(db, "ROLLBACK"); send_error(c, 500, "Erro ao criar pedido"); return; }
     unsigned long long pedido_id = mysql_insert_id(db);
     double total = 0.0;
@@ -260,5 +327,125 @@ void handler_pedido_obter(struct mg_connection *c, struct mg_http_message *hm, M
         mysql_free_result(res);
     }
     snprintf(buf + len, sizeof(buf) - len, "]}");
+    send_json(c, 200, buf);
+}
+
+void handler_cliente_cadastrar(struct mg_connection *c, struct mg_http_message *hm, MYSQL *db) {
+    char body[1024];
+    size_t len = hm->body.len < sizeof(body)-1 ? hm->body.len : sizeof(body)-1;
+    memcpy(body, hm->body.buf, len); body[len] = '\0';
+
+    char nome[150], email[150], senha[100];
+    if (!json_get_string(body, "nome", nome, sizeof(nome)) ||
+        !json_get_string(body, "email", email, sizeof(email)) ||
+        !json_get_string(body, "senha", senha, sizeof(senha))) {
+        send_error(c, 400, "Campos obrigatorios: nome, email, senha"); return;
+    }
+    if (strlen(senha) < 6) { send_error(c, 400, "A senha deve ter pelo menos 6 caracteres"); return; }
+    if (strlen(nome) == 0 || strlen(email) == 0) { send_error(c, 400, "Nome e email nao podem ser vazios"); return; }
+
+    char nome_esc[301], email_esc[301];
+    db_escape(db, nome_esc, sizeof(nome_esc), nome);
+    db_escape(db, email_esc, sizeof(email_esc), email);
+
+    char qcheck[400];
+    snprintf(qcheck, sizeof(qcheck), "SELECT id FROM clientes WHERE email = '%s'", email_esc);
+    MYSQL_RES *rcheck = db_query(db, qcheck);
+    if (rcheck) {
+        int existe = mysql_num_rows(rcheck) > 0;
+        mysql_free_result(rcheck);
+        if (existe) { send_error(c, 409, "Este email ja esta cadastrado"); return; }
+    }
+
+    char salt[33], hash[65];
+    gen_random_hex(salt, 16);
+    calc_senha_hash(senha, salt, hash);
+
+    char query[900];
+    snprintf(query, sizeof(query),
+        "INSERT INTO clientes (nome, email, senha_hash, salt) VALUES ('%s', '%s', '%s', '%s')",
+        nome_esc, email_esc, hash, salt);
+    if (db_exec(db, query) != 0) { send_error(c, 500, "Erro ao cadastrar cliente"); return; }
+
+    unsigned long long id = mysql_insert_id(db);
+    char resp[128];
+    snprintf(resp, sizeof(resp), "{\"id\":%llu,\"mensagem\":\"Cadastro realizado com sucesso\"}", id);
+    send_json(c, 201, resp);
+}
+
+void handler_cliente_login(struct mg_connection *c, struct mg_http_message *hm, MYSQL *db) {
+    char body[512];
+    size_t len = hm->body.len < sizeof(body)-1 ? hm->body.len : sizeof(body)-1;
+    memcpy(body, hm->body.buf, len); body[len] = '\0';
+
+    char email[150], senha[100];
+    if (!json_get_string(body, "email", email, sizeof(email)) ||
+        !json_get_string(body, "senha", senha, sizeof(senha))) {
+        send_error(c, 400, "Campos obrigatorios: email, senha"); return;
+    }
+
+    char email_esc[301];
+    db_escape(db, email_esc, sizeof(email_esc), email);
+
+    char query[400];
+    snprintf(query, sizeof(query),
+        "SELECT id, nome, email, senha_hash, salt FROM clientes WHERE email = '%s'", email_esc);
+    MYSQL_RES *res = db_query(db, query);
+    if (!res) { send_error(c, 500, "Erro interno"); return; }
+    MYSQL_ROW row = mysql_fetch_row(res);
+    if (!row) { mysql_free_result(res); send_error(c, 401, "Email ou senha invalidos"); return; }
+
+    char hash_calc[65];
+    calc_senha_hash(senha, row[4], hash_calc);
+    if (strcmp(hash_calc, row[3]) != 0) {
+        mysql_free_result(res);
+        send_error(c, 401, "Email ou senha invalidos"); return;
+    }
+
+    char id_str[16], nome[151], email_out[151];
+    snprintf(id_str, sizeof(id_str), "%s", row[0]);
+    snprintf(nome, sizeof(nome), "%s", row[1]);
+    snprintf(email_out, sizeof(email_out), "%s", row[2]);
+    mysql_free_result(res);
+
+    char token[65];
+    gen_random_hex(token, 32);
+
+    char qins[300];
+    snprintf(qins, sizeof(qins),
+        "INSERT INTO sessoes (token, cliente_id, expira_em) VALUES ('%s', %s, DATE_ADD(NOW(), INTERVAL 7 DAY))",
+        token, id_str);
+    if (db_exec(db, qins) != 0) { send_error(c, 500, "Erro ao criar sessao"); return; }
+
+    char resp[600];
+    snprintf(resp, sizeof(resp),
+        "{\"token\":\"%s\",\"cliente\":{\"id\":%s,\"nome\":\"%s\",\"email\":\"%s\"}}",
+        token, id_str, nome, email_out);
+    send_json(c, 200, resp);
+}
+
+void handler_cliente_pedidos(struct mg_connection *c, struct mg_http_message *hm, MYSQL *db) {
+    int cliente_id = resolver_cliente_por_token(hm, db);
+    if (!cliente_id) { send_error(c, 401, "Sessao invalida ou expirada. Faca login novamente."); return; }
+
+    char query[300];
+    snprintf(query, sizeof(query),
+        "SELECT id, total, status, criado_em FROM pedidos "
+        "WHERE cliente_id = %d ORDER BY criado_em DESC", cliente_id);
+    MYSQL_RES *res = db_query(db, query);
+    if (!res) { send_error(c, 500, "Erro interno"); return; }
+
+    char buf[8192];
+    int len = snprintf(buf, sizeof(buf), "[");
+    MYSQL_ROW row;
+    int first = 1;
+    while ((row = mysql_fetch_row(res))) {
+        len += snprintf(buf + len, sizeof(buf) - len,
+            "%s{\"id\":%s,\"total\":%s,\"status\":\"%s\",\"criado_em\":\"%s\"}",
+            first ? "" : ",", row[0], row[1], row[2], row[3]);
+        first = 0;
+    }
+    snprintf(buf + len, sizeof(buf) - len, "]");
+    mysql_free_result(res);
     send_json(c, 200, buf);
 }
