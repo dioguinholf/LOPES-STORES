@@ -19,7 +19,7 @@ static void event_handler(struct mg_connection *c, int ev, void *ev_data) {
             mg_http_reply(c, 204,
                 "Access-Control-Allow-Origin: *\r\n"
                 "Access-Control-Allow-Methods: GET, POST, OPTIONS\r\n"
-                "Access-Control-Allow-Headers: Content-Type, Authorization\r\n", "");
+                "Access-Control-Allow-Headers: Content-Type, Authorization, X-Admin-Token\r\n", "");
             return;
         }
         if (mg_match(hm->uri, mg_str("/api/times"), NULL)) {
