@@ -55,7 +55,7 @@ export default function FundoCampo() {
       const mg = W * 0.06;
       const mgV = H * 0.08;
       ctx.lineWidth = 1.5;
-      neon(`rgba(214, 52, 71, ${pulse})`, 20);
+      neon(`rgba(77, 166, 255, ${pulse})`, 20);
       ctx.beginPath();
       ctx.strokeRect(mg, mgV, W - mg * 2, H - mgV * 2);
 
@@ -63,21 +63,21 @@ export default function FundoCampo() {
       ctx.beginPath();
       ctx.moveTo(W / 2, mgV);
       ctx.lineTo(W / 2, H - mgV);
-      neon(`rgba(214, 52, 71, ${pulse})`, 15);
+      neon(`rgba(77, 166, 255, ${pulse})`, 15);
       ctx.stroke();
 
       // Círculo central
       const r = Math.min(W, H) * 0.12;
       ctx.beginPath();
       ctx.arc(W / 2, H / 2, r, 0, Math.PI * 2);
-      neon(`rgba(214, 52, 71, ${pulse})`, 20);
+      neon(`rgba(77, 166, 255, ${pulse})`, 20);
       ctx.stroke();
 
       // Ponto central
       ctx.beginPath();
       ctx.arc(W / 2, H / 2, 4, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(214, 52, 71, ${pulse})`;
-      ctx.shadowColor = '#d63447';
+      ctx.fillStyle = `rgba(77, 166, 255, ${pulse})`;
+      ctx.shadowColor = '#4da6ff';
       ctx.shadowBlur = 15;
       ctx.fill();
 
@@ -87,7 +87,7 @@ export default function FundoCampo() {
       const ay = (H - ah) / 2;
       ctx.beginPath();
       ctx.strokeRect(mg, ay, aw, ah);
-      neon(`rgba(59, 91, 169, ${pulse2})`, 15);
+      neon(`rgba(30, 58, 138, ${pulse2})`, 15);
       ctx.stroke();
 
       // Pequena área esquerda
@@ -96,31 +96,31 @@ export default function FundoCampo() {
       const say = (H - sah) / 2;
       ctx.beginPath();
       ctx.strokeRect(mg, say, saw, sah);
-      neon(`rgba(59, 91, 169, ${pulse2 * 0.8})`, 10);
+      neon(`rgba(30, 58, 138, ${pulse2 * 0.8})`, 10);
       ctx.stroke();
 
       // Área direita
       ctx.beginPath();
       ctx.strokeRect(W - mg - aw, ay, aw, ah);
-      neon(`rgba(59, 91, 169, ${pulse2})`, 15);
+      neon(`rgba(30, 58, 138, ${pulse2})`, 15);
       ctx.stroke();
 
       // Pequena área direita
       ctx.beginPath();
       ctx.strokeRect(W - mg - saw, say, saw, sah);
-      neon(`rgba(59, 91, 169, ${pulse2 * 0.8})`, 10);
+      neon(`rgba(30, 58, 138, ${pulse2 * 0.8})`, 10);
       ctx.stroke();
 
       // Semicírculo área esquerda
       ctx.beginPath();
       ctx.arc(mg + aw, H / 2, r * 0.7, -Math.PI * 0.4, Math.PI * 0.4);
-      neon(`rgba(214, 52, 71, ${pulse * 0.7})`, 12);
+      neon(`rgba(77, 166, 255, ${pulse * 0.7})`, 12);
       ctx.stroke();
 
       // Semicírculo área direita
       ctx.beginPath();
       ctx.arc(W - mg - aw, H / 2, r * 0.7, Math.PI * 0.6, Math.PI * 1.4);
-      neon(`rgba(214, 52, 71, ${pulse * 0.7})`, 12);
+      neon(`rgba(77, 166, 255, ${pulse * 0.7})`, 12);
       ctx.stroke();
 
       // Cantos do campo (arcos)
@@ -128,7 +128,7 @@ export default function FundoCampo() {
       // canto sup esq
       ctx.beginPath();
       ctx.arc(mg, mgV, cr, 0, Math.PI / 2);
-      neon(`rgba(242, 169, 59, ${pulse2 * 0.8})`, 10);
+      neon(`rgba(180, 194, 214, ${pulse2 * 0.8})`, 10);
       ctx.stroke();
       // canto sup dir
       ctx.beginPath();
@@ -147,8 +147,8 @@ export default function FundoCampo() {
       const pp = W * 0.09;
       ctx.beginPath();
       ctx.arc(mg + pp, H / 2, 3, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(242, 169, 59, ${pulse2})`;
-      ctx.shadowColor = '#f2a93b';
+      ctx.fillStyle = `rgba(180, 194, 214, ${pulse2})`;
+      ctx.shadowColor = '#b4c2d6';
       ctx.shadowBlur = 12;
       ctx.fill();
 
