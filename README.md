@@ -125,8 +125,13 @@ curl -X POST http://localhost:8080/api/pedidos \
 - [x] Carrinho de compras
 - [x] Checkout e criação de pedidos (transação com rollback e validação de estoque)
 - [x] Login de clientes no back-end (senha com salt e token de sessão com expiração)
+- [x] Página de detalhes do produto
+- [x] Busca no catálogo
+- [x] Favoritos (salvos no navegador)
+- [x] Carrinho salvo no navegador (não perder ao recarregar)
+- [x] Rastreio de pedido por número (sem necessidade de login)
+- [x] Layout responsivo com menu mobile
 - [ ] Telas de login, cadastro e "Meus Pedidos" no front-end
-- [ ] Carrinho salvo no navegador (não perder ao recarregar)
 - [ ] Painel admin (cadastro, edição e exclusão de camisas)
 - [ ] Upload de imagens
 - [ ] Integração com gateway de pagamento
